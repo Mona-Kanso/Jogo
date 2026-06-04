@@ -19,11 +19,14 @@ typedef struct {
     float vel_y;
     int   esta_no_chao;
     int frame;
+    int contador;
+    int vidas;
     joystick       *control;
-    ALLEGRO_BITMAP *sprite;    
+    ALLEGRO_BITMAP *sprite;
     ALLEGRO_BITMAP *sprite_correndo_direita[4];
     ALLEGRO_BITMAP *sprite_esquerda;
     ALLEGRO_BITMAP *sprite_agachado;
+    ALLEGRO_BITMAP *sprite_pulando_direita[2];
     ALLEGRO_BITMAP *sprite_parado_direita;
 } player;
 

@@ -11,7 +11,6 @@ player *player_create(float x, float y) {
     p->sprite_esquerda = al_load_bitmap("raposaParadaEsquerda.png");
     p->sprite_agachado = al_load_bitmap("raposaAgachada.png");
 
-    /* Vale a pena fazer uma lista circular aqui*/
     p->frame = 0;
     p->sprite_parado_direita = al_load_bitmap("raposaParadaDireita.png");
     p->sprite_correndo_direita[0] = al_load_bitmap("raposaCorrendo1.png");
@@ -19,7 +18,12 @@ player *player_create(float x, float y) {
     p->sprite_correndo_direita[2] = al_load_bitmap("raposaCorrendo3.png");
     p->sprite_correndo_direita[3] = al_load_bitmap("raposaCorrendo4.png");
     p->sprite_correndo_direita[4] = al_load_bitmap("raposaCorrendo5.png");
+    p->sprite_pulando_direita[0] = al_load_bitmap("raposaPulandoDireita1.png");
+    p->sprite_pulando_direita[1] = al_load_bitmap("raposaPulandoDireita2.png");
+    p->sprite_pulando_direita[2] = al_load_bitmap("raposaPulandoDireita3.png");
     p->sprite = p->sprite_parado_direita;
+    p->contador = 0;
+    p->vidas = 3;
     return p;
 }
 
@@ -48,37 +52,75 @@ int checar_colisao_chao(player *p, Bloco *blocos, int n) {
 }
 
 void player_move(player *p, Bloco *blocos, int n_blocos) {
-    /* Movimento horizontal */
-    if (p->control->left) {
-        p->x -= PLAYER_SPEED;
-        p->sprite = p->sprite_esquerda;
-    } else if (p->control->right) {
-        p->x += PLAYER_SPEED;
-        p->sprite = p->sprite_correndo_direita[p->frame];
-        p->frame++;
-        if(p->frame >= 5){
-            p->frame = 0;
-        }
-    } else if (p->control->down) {
-        p->sprite = p->sprite_agachado;
-    }
 
-    /* Pulo */
-    else if (p->control->up && p->esta_no_chao) {
+    if (p->control->left)
+        p->x -= PLAYER_SPEED;
+    if (p->control->right)
+        p->x += PLAYER_SPEED;
+
+    if (p->control->up && p->esta_no_chao) {
         p->vel_y        = JUMP_FORCE;
         p->esta_no_chao = 0;
+        p->frame        = 0;
+        p->contador     = 0;
     }
 
-    /* Gravidade */
+    /* --- Física vertical --- */
     p->vel_y += GRAVITY;
     p->y     += p->vel_y;
 
-    /* Colisão com blocos */
+    /* --- Colisão com chão --- */
     if (p->vel_y >= 0 && checar_colisao_chao(p, blocos, n_blocos)) {
-        p->vel_y        = 0.0f;
+        p->vel_y = 0.0f;
+        if (!p->esta_no_chao) {   /* acabou de aterrissar: reseta animação */
+            p->frame    = 0;
+            p->contador = 0;
+        }
         p->esta_no_chao = 1;
     } else {
         p->esta_no_chao = 0;
+    }
+
+    /* --- Sprites: escolha baseada no estado atual --- */
+    if (!p->esta_no_chao) {
+        /* No ar: anima os 3 frames de pulo com base num contador */
+        p->contador++;
+        if (p->contador >= 8) {
+            p->contador = 0;
+            p->frame++;
+            if (p->frame >= 3)
+                p->frame = 2; /* trava no último frame enquanto cai */
+        }
+        if (p->control->left)
+            p->sprite = p->sprite_esquerda;
+        else
+            p->sprite = p->sprite_pulando_direita[p->frame];
+
+    } else {
+        /* No chão */
+        if (p->control->down) {
+            p->sprite = p->sprite_agachado;
+
+        } else if (p->control->left) {
+            p->sprite = p->sprite_esquerda;
+
+        } else if (p->control->right) {
+            /* Animação de corrida para direita */
+            p->contador++;
+            if (p->contador >= 6) {   /* troca de frame a cada 6 ticks (~10fps a 60fps) */
+                p->contador = 0;
+                p->frame++;
+                if (p->frame >= 5)
+                    p->frame = 0;
+            }
+            p->sprite = p->sprite_correndo_direita[p->frame];
+
+        } else {
+            /* Parado */
+            p->frame    = 0;
+            p->contador = 0;
+            p->sprite   = p->sprite_parado_direita;
+        }
     }
 }
 
