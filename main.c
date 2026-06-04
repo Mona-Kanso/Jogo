@@ -72,7 +72,7 @@ int main() {
     gerar_blocos_cercas(blocos, cercas, NUM_BLOCOS);
 
 
-    player *p = player_create(100, 400);
+    player *p = player_create(COORDENADA_INICIAL_X, COORDENADA_INICIAL_Y);
 
     ALLEGRO_EVENT ev;
     int running = 1;
@@ -91,9 +91,9 @@ int main() {
 
                 ALLEGRO_MOUSE_STATE estado_mouse;
                 al_get_mouse_state(&estado_mouse);
-                
+
                 clicou = (estado_mouse.buttons & 1);
-                
+
                 display_menu_inicial(cor_chao, &main_menu, fonte_titulo, &running, estado_mouse.x, estado_mouse.y, clicou);
 
             } else{

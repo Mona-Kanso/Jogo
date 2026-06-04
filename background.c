@@ -4,7 +4,6 @@ void destroi_bloco_de_opcao(bloco_de_opcao *bloco){
     free(bloco);
 }
 
-//Como é a melhor forma de passar parametro por aqui, dá pra jogar tudo na main, ou transformar isso em global 
 void display_menu_inicial(ALLEGRO_COLOR cor_bloco_opcao, int *main_menu, ALLEGRO_FONT *fonte, int *running, float mouse_x, float mouse_y, int mouse_button){
 
     bloco_de_opcao *iniciar = inicializa_bloco_de_opcao(cor_bloco_opcao, 350);
@@ -14,7 +13,7 @@ void display_menu_inicial(ALLEGRO_COLOR cor_bloco_opcao, int *main_menu, ALLEGRO
     al_draw_filled_rectangle(sair->x-sair->largura/2, sair->y-sair->altura/2, sair->x+sair->largura/2, sair->y+sair->altura/2, cor_bloco_opcao);
 
     al_draw_text(fonte, al_map_rgb(255, 255, 255), SCREEN_W / 2, 100, ALLEGRO_ALIGN_CENTER, "PASSEANDO POR CURITIBA");
-    
+
     al_draw_text(fonte, al_map_rgb(255, 255, 255), iniciar->x, iniciar->y - 20, ALLEGRO_ALIGN_CENTER, "Jogar");
     al_draw_text(fonte, al_map_rgb(255, 255, 255), sair->x, sair->y - 20, ALLEGRO_ALIGN_CENTER, "Sair");
 
