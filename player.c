@@ -11,6 +11,7 @@ player *player_create(float x, float y) {
     p->control        = joystick_create();
     p->sprite_esquerda = al_load_bitmap("raposaParadaEsquerda.png");
     p->sprite_agachado = al_load_bitmap("raposaAgachada.png");
+    p->agachado = 0;
 
     p->frame = 0;
     p->sprite_parado_direita = al_load_bitmap("raposaParadaDireita.png");
@@ -19,12 +20,14 @@ player *player_create(float x, float y) {
     p->sprite_correndo_direita[2] = al_load_bitmap("raposaCorrendo3.png");
     p->sprite_correndo_direita[3] = al_load_bitmap("raposaCorrendo4.png");
     p->sprite_correndo_direita[4] = al_load_bitmap("raposaCorrendo5.png");
+    p->sprite_correndo_direita[5] = al_load_bitmap("raposaCorrendo6.png");
     p->sprite_pulando_direita[0] = al_load_bitmap("raposaPulandoDireita1.png");
     p->sprite_pulando_direita[1] = al_load_bitmap("raposaPulandoDireita2.png");
     p->sprite_pulando_direita[2] = al_load_bitmap("raposaPulandoDireita3.png");
     p->sprite = p->sprite_parado_direita;
     p->contador = 0;
     p->vidas = 3;
+    p->virado_esquerda = 0;
     return p;
 }
 
@@ -95,7 +98,7 @@ void player_move(player *p, Bloco *blocos, int n_blocos) {
         p->esta_no_chao = 0;
     }
 
-    if (!p->esta_no_chao) {
+if (!p->esta_no_chao) {
         p->contador++;
         if (p->contador >= 8) {
             p->contador = 0;
@@ -104,24 +107,27 @@ void player_move(player *p, Bloco *blocos, int n_blocos) {
                 p->frame = 2;
             }
         }
-        if (p->control->left)
-            p->sprite = p->sprite_esquerda;
-        else
-            p->sprite = p->sprite_pulando_direita[p->frame];
+        
+        if (p->control->left) p->virado_esquerda = 1;
+        if (p->control->right) p->virado_esquerda = 0;
+        
+        p->sprite = p->sprite_pulando_direita[p->frame];
 
     } else {
         if (p->control->down) {
             p->sprite = p->sprite_agachado;
+            p->agachado = 1;
 
-        } else if (p->control->left) {
-            p->sprite = p->sprite_esquerda;
+        } else if (p->control->left || p->control->right) {
+            p->agachado = 0;
+            
+            p->virado_esquerda = p->control->left ? 1 : 0; 
 
-        } else if (p->control->right) {
             p->contador++;
             if (p->contador >= 6) {
                 p->contador = 0;
                 p->frame++;
-                if (p->frame >= 5){
+                if (p->frame >= 6){
                     p->frame = 0;
                 }
             }
@@ -130,6 +136,7 @@ void player_move(player *p, Bloco *blocos, int n_blocos) {
         } else {
             p->frame    = 0;
             p->contador = 0;
+            p->agachado = 0;
             p->sprite   = p->sprite_parado_direita;
         }
     }

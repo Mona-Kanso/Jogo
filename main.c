@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_primitives.h>
@@ -17,16 +18,74 @@ void atualizar_camera(player *p, ALLEGRO_TRANSFORM *cam) {
     al_use_transform(cam);
 }
 
-void gerar_blocos_cercas(Bloco *b, Cercas *c, int n) {
+void atualizar_e_colidir_arvores(Arvores *a, int n, player *p) {
+    for (int i = 0; i < n; i++) {
+        if (!a[i].existe) continue;
+
+        float alt_orig_em_pe = al_get_bitmap_height(a[i].sprite_01);
+        float fator_escala = (PLAYER_HEIGHT * 2.0f) / alt_orig_em_pe;
+
+        float distancia_x = p->x - a[i].x;
+        if (distancia_x < 0) distancia_x = -distancia_x;
+
+        if (a[i].estado_queda == 0 && distancia_x < 180.0f) {
+            a[i].estado_queda = 1;
+        }
+
+        if (a[i].estado_queda > 0 && a[i].estado_queda < 4) {
+            a[i].contador_tempo++;
+            
+            if (a[i].contador_tempo >= 15) {
+                a[i].estado_queda++;
+                a[i].contador_tempo = 0;
+
+                if (a[i].estado_queda == 1) a[i].sprite = a[i].sprite_01;
+                if (a[i].estado_queda == 2) a[i].sprite = a[i].sprite_02;
+                if (a[i].estado_queda == 3) a[i].sprite = a[i].sprite_03;
+                if (a[i].estado_queda == 4) a[i].sprite = a[i].sprite_04;
+            }
+        }
+
+        float p_left   = p->x;
+        float p_right  = p->x + PLAYER_W;
+        float p_top    = p->agachado ? (p->y + PLAYER_HEIGHT - PLAYER_HEIGHT_AGACHADO) : p->y;
+        float p_bottom = p->y + PLAYER_HEIGHT;
+
+        float larg_arvore_atual = al_get_bitmap_width(a[i].sprite) * fator_escala;
+        float alt_arvore_atual  = al_get_bitmap_height(a[i].sprite) * fator_escala;
+
+        float a_left   = a[i].x;
+        float a_right  = a[i].x + larg_arvore_atual;
+        float a_top    = ALTURA_CHAO - alt_arvore_atual; // Rente ao chão
+        float a_bottom = ALTURA_CHAO;
+
+        if (p_right > a_left && p_left < a_right && p_bottom > a_top && p_top < a_bottom) {
+            if (a[i].estado_queda > 0 && !a[i].ja_bateu) {
+
+                a[i].ja_bateu = 1;
+            }
+        }
+    }
+}
+
+void gerar_elementos(Bloco *b, Cercas *c, Arvores *a, int n) {
+
+    ALLEGRO_BITMAP *sprite_01 = al_load_bitmap("arvore1.png");
+    ALLEGRO_BITMAP *sprite_02 = al_load_bitmap("arvore2.png");
+    ALLEGRO_BITMAP *sprite_03 = al_load_bitmap("arvore3.png");
+    ALLEGRO_BITMAP *sprite_04 = al_load_bitmap("arvore4.png");
     for (int i = 0; i < n; i++) {
         b[i].x = i * BLOCK_W;
         b[i].y = ALTURA_CHAO;
         c[i].x = i * BLOCK_W;
         c[i].y = ALTURA_CHAO - 95;
+        a[i].x = i * BLOCK_W;
+        a[i].y = ALTURA_CHAO - 10;
 
         if(i <=1 || !b[i-1].existe){
             b[i].existe = 1;
             c[i].existe = 0;
+            a[i].existe = 0;
         } else{
             b[i].existe = (rand()%100 >= 15);
 
@@ -35,7 +94,26 @@ void gerar_blocos_cercas(Bloco *b, Cercas *c, int n) {
             } else{
                 c[i].existe = (rand()%100 >= 80);
             }
-        }
+
+            if (b[i-1].existe && b[i].existe) {
+                        a[i].existe = (rand()%100 >= 90);
+                        a[i].sprite_01 = sprite_01;
+                        a[i].sprite_02 = sprite_02;
+                        a[i].sprite_03 = sprite_03;
+                        a[i].sprite_04 = sprite_04;
+                        a[i].sprite = a[i].sprite_01;
+                        
+                        // INICIALIZAÇÃO:
+                        a[i].estado_queda = 0;
+                        a[i].contador_tempo = 0;
+                        a[i].ja_bateu = 0;
+                    } else {
+                        a[i].existe = 0;
+                        a[i].estado_queda = 0;
+                        a[i].contador_tempo = 0;
+                        a[i].ja_bateu = 0;
+                    }
+                }
     }
 }
 
@@ -69,7 +147,8 @@ int main() {
 
     Bloco blocos[NUM_BLOCOS];
     Cercas cercas[NUM_BLOCOS];
-    gerar_blocos_cercas(blocos, cercas, NUM_BLOCOS);
+    Arvores arvores[NUM_BLOCOS];
+    gerar_elementos(blocos, cercas, arvores, NUM_BLOCOS);
 
 
     player *p = player_create(COORDENADA_INICIAL_X, COORDENADA_INICIAL_Y);
@@ -96,38 +175,74 @@ int main() {
 
                 display_menu_inicial(cor_chao, &main_menu, fonte_titulo, &running, estado_mouse.x, estado_mouse.y, clicou);
 
-            } else{
+            } else {
+                // 1. Atualiza lógica de movimentação do jogador
                 player_move(p, blocos, NUM_BLOCOS);
-
+                
+                // 2. ATUALIZA QUEDA E COLISÃO DAS ÁRVORES (NOVO)
+                atualizar_e_colidir_arvores(arvores, NUM_BLOCOS, p);
+                
                 atualizar_camera(p, &camera);
-
+                
                 for (int i = 0; i < NUM_BLOCOS; i++) {
-                    if (blocos[i].existe){
+                    if (blocos[i].existe) {
                         al_draw_filled_rectangle(
                             blocos[i].x, blocos[i].y,
                             blocos[i].x + BLOCK_W, blocos[i].y + BLOCK_H,
                             cor_chao);
-                        if (cercas[i].existe){
+                        
+                        if (cercas[i].existe) {
                             al_draw_scaled_bitmap(sprite_cerca, 
                                 0, 0, 
                                 al_get_bitmap_width(sprite_cerca), 
                                 al_get_bitmap_height(sprite_cerca), 
                                 cercas[i].x, cercas[i].y, 112, 95, 0);
                         }
+                        
+                        // DESENHO DA ÁRVORE COM ESCALA CORRIGIDA E DINÂMICA
+                        if (arvores[i].existe && arvores[i].sprite != NULL) {
+                            float alt_orig_em_pe = al_get_bitmap_height(arvores[i].sprite_01);
+                            float fator_escala = (PLAYER_HEIGHT * 1.8f) / alt_orig_em_pe;
+
+                            float larg_final = al_get_bitmap_width(arvores[i].sprite) * fator_escala;
+                            float alt_final = al_get_bitmap_height(arvores[i].sprite) * fator_escala;
+                            float y_rente_ao_chao = ALTURA_CHAO - alt_final;
+
+                            al_draw_scaled_bitmap(
+                                arvores[i].sprite, 
+                                0, 0, al_get_bitmap_width(arvores[i].sprite), al_get_bitmap_height(arvores[i].sprite),
+                                arvores[i].x, y_rente_ao_chao, larg_final, alt_final, 
+                                0
+                            );
+                        }                                
                     }
                 }
+                        
+                int flag_espelhamento = p->virado_esquerda ? ALLEGRO_FLIP_HORIZONTAL : 0;
 
-                al_draw_scaled_bitmap(p->sprite,
+                if(p->agachado){
+                    al_draw_scaled_bitmap(p->sprite,
                     0, 0,
                     al_get_bitmap_width(p->sprite),
                     al_get_bitmap_height(p->sprite),
-                    p->x, p->y, 115, 170, 0);
-
+                    p->x, p->y + PLAYER_HEIGHT - PLAYER_HEIGHT_AGACHADO,
+                    PLAYER_W , PLAYER_HEIGHT_AGACHADO, 
+                    flag_espelhamento); // <--- AQUI
+                } else{
+                    al_draw_scaled_bitmap(p->sprite,
+                    0, 0,
+                    al_get_bitmap_width(p->sprite),
+                    al_get_bitmap_height(p->sprite),
+                    p->x, p->y, PLAYER_W , PLAYER_HEIGHT, 
+                    flag_espelhamento); // <--- E AQUI
+                }
                 ALLEGRO_TRANSFORM hud;
                 al_identity_transform(&hud);
                 al_use_transform(&hud);
 
             }
+
+
             al_flip_display();
             break;
 

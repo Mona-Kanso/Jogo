@@ -29,9 +29,9 @@ void display_menu_inicial(ALLEGRO_COLOR cor_bloco_opcao, int *main_menu, ALLEGRO
             *running = 0;
         }
 
-        destroi_bloco_de_opcao(iniciar);
-        destroi_bloco_de_opcao(sair);
     }
+    destroi_bloco_de_opcao(iniciar);
+    destroi_bloco_de_opcao(sair);
 }
 
 bloco_de_opcao *inicializa_bloco_de_opcao(ALLEGRO_COLOR cor_bloco_opcao, int coordenada_y){

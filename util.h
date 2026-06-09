@@ -1,6 +1,7 @@
 
 #define PLAYER_W 115
 #define PLAYER_HEIGHT 170
+#define PLAYER_HEIGHT_AGACHADO 100
 #define SCREEN_W        1280
 #define SCREEN_H        720
 #define PLAYER_SPEED    7
