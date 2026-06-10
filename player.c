@@ -24,6 +24,8 @@ player *player_create(float x, float y) {
     p->sprite_pulando_direita[0] = al_load_bitmap("raposaPulandoDireita1.png");
     p->sprite_pulando_direita[1] = al_load_bitmap("raposaPulandoDireita2.png");
     p->sprite_pulando_direita[2] = al_load_bitmap("raposaPulandoDireita3.png");
+    p->sprite_coracao_cheio = al_load_bitmap("coracaoCheio.png");
+    p->sprite_coracao_vazio = al_load_bitmap("coracaoVazio.png");
     p->sprite = p->sprite_parado_direita;
     p->contador = 0;
     p->vidas = 3;
@@ -60,13 +62,15 @@ int checar_colisao_chao(player *p, Bloco *blocos, int n) {
     return 0;
 }
 
-void checar_colisao_obstaculos(player *p){
+void checar_queda(player *p){
 
     if(p->y > ALTURA_CHAO + 400){
         p->x = COORDENADA_INICIAL_X;
         p->y = COORDENADA_INICIAL_Y;
         p->esta_no_chao = 1;
+        p->coracoes[p->vidas - 1].sprite = p->sprite_coracao_vazio;
         p->vidas--;
+        
     }
 }
 
@@ -140,7 +144,7 @@ if (!p->esta_no_chao) {
             p->sprite   = p->sprite_parado_direita;
         }
     }
-    checar_colisao_obstaculos(p);
+    checar_queda(p);
 }
 
 void player_destroy(player *p) {

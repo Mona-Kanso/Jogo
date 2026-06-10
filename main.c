@@ -1,124 +1,19 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include <allegro5/allegro5.h>
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>		
 #include <allegro5/allegro_ttf.h>
 #include "util.h"
-#include "player.h"
 #include "background.h"
+#include "player.h"
 
-/* ------------------------------------------------------------------ */
-void atualizar_camera(player *p, ALLEGRO_TRANSFORM *cam) {
-    al_identity_transform(cam);
-    al_translate_transform(cam,
-        -(p->x - SCREEN_W / 2.0f),
-        -(p->y - SCREEN_H / 2.0f));
-    al_use_transform(cam);
-}
-
-void atualizar_e_colidir_arvores(Arvores *a, int n, player *p) {
-    for (int i = 0; i < n; i++) {
-        if (!a[i].existe) continue;
-
-        float alt_orig_em_pe = al_get_bitmap_height(a[i].sprite_01);
-        float fator_escala = (PLAYER_HEIGHT * 2.0f) / alt_orig_em_pe;
-
-        float distancia_x = p->x - a[i].x;
-        if (distancia_x < 0) distancia_x = -distancia_x;
-
-        if (a[i].estado_queda == 0 && distancia_x < 180.0f) {
-            a[i].estado_queda = 1;
-        }
-
-        if (a[i].estado_queda > 0 && a[i].estado_queda < 4) {
-            a[i].contador_tempo++;
-            
-            if (a[i].contador_tempo >= 15) {
-                a[i].estado_queda++;
-                a[i].contador_tempo = 0;
-
-                if (a[i].estado_queda == 1) a[i].sprite = a[i].sprite_01;
-                if (a[i].estado_queda == 2) a[i].sprite = a[i].sprite_02;
-                if (a[i].estado_queda == 3) a[i].sprite = a[i].sprite_03;
-                if (a[i].estado_queda == 4) a[i].sprite = a[i].sprite_04;
-            }
-        }
-
-        float p_left   = p->x;
-        float p_right  = p->x + PLAYER_W;
-        float p_top    = p->agachado ? (p->y + PLAYER_HEIGHT - PLAYER_HEIGHT_AGACHADO) : p->y;
-        float p_bottom = p->y + PLAYER_HEIGHT;
-
-        float larg_arvore_atual = al_get_bitmap_width(a[i].sprite) * fator_escala;
-        float alt_arvore_atual  = al_get_bitmap_height(a[i].sprite) * fator_escala;
-
-        float a_left   = a[i].x;
-        float a_right  = a[i].x + larg_arvore_atual;
-        float a_top    = ALTURA_CHAO - alt_arvore_atual; // Rente ao chão
-        float a_bottom = ALTURA_CHAO;
-
-        if (p_right > a_left && p_left < a_right && p_bottom > a_top && p_top < a_bottom) {
-            if (a[i].estado_queda > 0 && !a[i].ja_bateu) {
-
-                a[i].ja_bateu = 1;
-            }
-        }
-    }
-}
-
-void gerar_elementos(Bloco *b, Cercas *c, Arvores *a, int n) {
-
-    ALLEGRO_BITMAP *sprite_01 = al_load_bitmap("arvore1.png");
-    ALLEGRO_BITMAP *sprite_02 = al_load_bitmap("arvore2.png");
-    ALLEGRO_BITMAP *sprite_03 = al_load_bitmap("arvore3.png");
-    ALLEGRO_BITMAP *sprite_04 = al_load_bitmap("arvore4.png");
-    for (int i = 0; i < n; i++) {
-        b[i].x = i * BLOCK_W;
-        b[i].y = ALTURA_CHAO;
-        c[i].x = i * BLOCK_W;
-        c[i].y = ALTURA_CHAO - 95;
-        a[i].x = i * BLOCK_W;
-        a[i].y = ALTURA_CHAO - 10;
-
-        if(i <=1 || !b[i-1].existe){
-            b[i].existe = 1;
-            c[i].existe = 0;
-            a[i].existe = 0;
-        } else{
-            b[i].existe = (rand()%100 >= 15);
-
-            if(!b[i].existe || !b[i-1].existe || c[i-1].existe){
-                c[i].existe = 0;
-            } else{
-                c[i].existe = (rand()%100 >= 80);
-            }
-
-            if (b[i-1].existe && b[i].existe) {
-                        a[i].existe = (rand()%100 >= 90);
-                        a[i].sprite_01 = sprite_01;
-                        a[i].sprite_02 = sprite_02;
-                        a[i].sprite_03 = sprite_03;
-                        a[i].sprite_04 = sprite_04;
-                        a[i].sprite = a[i].sprite_01;
-                        
-                        // INICIALIZAÇÃO:
-                        a[i].estado_queda = 0;
-                        a[i].contador_tempo = 0;
-                        a[i].ja_bateu = 0;
-                    } else {
-                        a[i].existe = 0;
-                        a[i].estado_queda = 0;
-                        a[i].contador_tempo = 0;
-                        a[i].ja_bateu = 0;
-                    }
-                }
-    }
-}
-
-/* ------------------------------------------------------------------ */
 int main() {
+
+    srand(time(NULL));
+
     al_init();
     al_init_image_addon();
     al_init_primitives_addon();
@@ -131,7 +26,7 @@ int main() {
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
     ALLEGRO_DISPLAY    *disp  = al_create_display(SCREEN_W, SCREEN_H);
     ALLEGRO_FONT *fonte_titulo = al_load_ttf_font("fonte.ttf", 72, 0);
-    ALLEGRO_BITMAP *sprite_cerca = al_load_bitmap("cerca.png");
+    ALLEGRO_BITMAP *sprite_armadilha = al_load_bitmap("armadilha.png");
     ALLEGRO_TRANSFORM   camera;
 
     if (!disp) return -1;
@@ -146,17 +41,25 @@ int main() {
     ALLEGRO_COLOR cor_chao = al_map_rgb(139,  69,  19);
 
     Bloco blocos[NUM_BLOCOS];
-    Cercas cercas[NUM_BLOCOS];
+    Armadilhas armadilhas[NUM_BLOCOS];
     Arvores arvores[NUM_BLOCOS];
-    gerar_elementos(blocos, cercas, arvores, NUM_BLOCOS);
-
+    Passaros passaros [NUM_BLOCOS];
+    gerar_elementos(blocos, armadilhas, arvores, passaros);
 
     player *p = player_create(COORDENADA_INICIAL_X, COORDENADA_INICIAL_Y);
+
+    for(int i = 0; i < NUM_CORACOES; i++){
+        p->coracoes[i].sprite = p->sprite_coracao_cheio;
+        p->coracoes[i].x = 1000 + 80*i;
+        p->coracoes[i].y = 20;
+    }
+
 
     ALLEGRO_EVENT ev;
     int running = 1;
     int main_menu = 1;
     int clicou;
+    int game_over = 0;
 
     while (running) {
         al_wait_for_event(queue, &ev);
@@ -166,7 +69,11 @@ int main() {
         case ALLEGRO_EVENT_TIMER:
 
             al_clear_to_color(cor_ceu);
-            if(main_menu){
+            if(game_over){
+
+                display_game_over(fonte_titulo, p->x >= GAME_OVER);
+            }
+            else if(main_menu){
 
                 ALLEGRO_MOUSE_STATE estado_mouse;
                 al_get_mouse_state(&estado_mouse);
@@ -176,11 +83,11 @@ int main() {
                 display_menu_inicial(cor_chao, &main_menu, fonte_titulo, &running, estado_mouse.x, estado_mouse.y, clicou);
 
             } else {
-                // 1. Atualiza lógica de movimentação do jogador
                 player_move(p, blocos, NUM_BLOCOS);
                 
-                // 2. ATUALIZA QUEDA E COLISÃO DAS ÁRVORES (NOVO)
-                atualizar_e_colidir_arvores(arvores, NUM_BLOCOS, p);
+                atualizar_e_colidir_arvores(arvores, p);
+                colisao_armadilha(armadilhas, p);
+                colisao_passaro(passaros, p);
                 
                 atualizar_camera(p, &camera);
                 
@@ -191,15 +98,14 @@ int main() {
                             blocos[i].x + BLOCK_W, blocos[i].y + BLOCK_H,
                             cor_chao);
                         
-                        if (cercas[i].existe) {
-                            al_draw_scaled_bitmap(sprite_cerca, 
+                        if (armadilhas[i].existe) {
+                            al_draw_scaled_bitmap(sprite_armadilha, 
                                 0, 0, 
-                                al_get_bitmap_width(sprite_cerca), 
-                                al_get_bitmap_height(sprite_cerca), 
-                                cercas[i].x, cercas[i].y, 112, 95, 0);
+                                al_get_bitmap_width(sprite_armadilha), 
+                                al_get_bitmap_height(sprite_armadilha), 
+                                armadilhas[i].x, armadilhas[i].y, ARMADILHA_W, ARMADILHA_HEIGHT, 0);
                         }
                         
-                        // DESENHO DA ÁRVORE COM ESCALA CORRIGIDA E DINÂMICA
                         if (arvores[i].existe && arvores[i].sprite != NULL) {
                             float alt_orig_em_pe = al_get_bitmap_height(arvores[i].sprite_01);
                             float fator_escala = (PLAYER_HEIGHT * 1.8f) / alt_orig_em_pe;
@@ -216,8 +122,18 @@ int main() {
                             );
                         }                                
                     }
+
+                    if(passaros[i].existe){
+                        al_draw_scaled_bitmap(passaros[i].sprite, 
+                                0, 0, 
+                                al_get_bitmap_width(passaros[i].sprite), 
+                                al_get_bitmap_height(passaros[i].sprite), 
+                                passaros[i].x, passaros[i].y, PASSARO_W, PASSARO_HEIGHT, 0);
+                    }
                 }
-                        
+
+
+                atualizar_voo_passaros(passaros);
                 int flag_espelhamento = p->virado_esquerda ? ALLEGRO_FLIP_HORIZONTAL : 0;
 
                 if(p->agachado){
@@ -227,18 +143,27 @@ int main() {
                     al_get_bitmap_height(p->sprite),
                     p->x, p->y + PLAYER_HEIGHT - PLAYER_HEIGHT_AGACHADO,
                     PLAYER_W , PLAYER_HEIGHT_AGACHADO, 
-                    flag_espelhamento); // <--- AQUI
+                    flag_espelhamento);
                 } else{
                     al_draw_scaled_bitmap(p->sprite,
                     0, 0,
                     al_get_bitmap_width(p->sprite),
                     al_get_bitmap_height(p->sprite),
                     p->x, p->y, PLAYER_W , PLAYER_HEIGHT, 
-                    flag_espelhamento); // <--- E AQUI
+                    flag_espelhamento);
                 }
                 ALLEGRO_TRANSFORM hud;
                 al_identity_transform(&hud);
                 al_use_transform(&hud);
+
+                for(int i = 0; i < NUM_CORACOES; i++){
+
+                   al_draw_scaled_bitmap(p->coracoes[i].sprite, 
+                                0, 0, 
+                                al_get_bitmap_width(p->coracoes[i].sprite), 
+                                al_get_bitmap_height(p->coracoes[i].sprite), 
+                                p->coracoes[i].x, p->coracoes[i].y, 78, 67, 0);
+                }
 
             }
 
@@ -268,6 +193,11 @@ int main() {
             running = 0;
             break;
         }
+
+        if(p->vidas == 0 || p->x >= GAME_OVER){
+            game_over = 1;
+        }
+
     }
 
     player_destroy(p);

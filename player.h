@@ -14,6 +14,13 @@ typedef struct {
     int x, y, existe;
 } Bloco;
 
+typedef struct{
+    int x;
+    int y;
+    int vida;
+    ALLEGRO_BITMAP *sprite;
+} Coracao;
+
 typedef struct {
     float x, y;
     float vel_y;
@@ -30,10 +37,13 @@ typedef struct {
     ALLEGRO_BITMAP *sprite_agachado;
     ALLEGRO_BITMAP *sprite_pulando_direita[3];
     ALLEGRO_BITMAP *sprite_parado_direita;
+    ALLEGRO_BITMAP *sprite_coracao_cheio;
+    ALLEGRO_BITMAP *sprite_coracao_vazio;
+    Coracao coracoes[NUM_CORACOES];
 } player;
 
 player *player_create(float x, float y);
-void    player_move(player *p, Bloco *blocos, int n_blocos);
-void    player_destroy(player *p);
+void player_move(player *p, Bloco *blocos, int n_blocos);
+void player_destroy(player *p);
 
 #endif
