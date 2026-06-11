@@ -7,11 +7,12 @@
 #include "joystick.h"
 #include "util.h"
 
-#define MAX_X SCREEN_W
-#define MAX_Y SCREEN_H
-
 typedef struct {
     int x, y, existe;
+    
+    int desmorona;
+    int pisado;
+    int timer_queda;
 } Bloco;
 
 typedef struct{
@@ -21,6 +22,7 @@ typedef struct{
     ALLEGRO_BITMAP *sprite;
 } Coracao;
 
+void atualizar_blocos(Bloco *blocos);
 typedef struct {
     float x, y;
     float vel_y;
@@ -32,10 +34,9 @@ typedef struct {
     int virado_esquerda;
     joystick       *control;
     ALLEGRO_BITMAP *sprite;
-    ALLEGRO_BITMAP *sprite_correndo_direita[6];
-    ALLEGRO_BITMAP *sprite_esquerda;
+    ALLEGRO_BITMAP *sprite_correndo[6];
     ALLEGRO_BITMAP *sprite_agachado;
-    ALLEGRO_BITMAP *sprite_pulando_direita[3];
+    ALLEGRO_BITMAP *sprite_pulando[3];
     ALLEGRO_BITMAP *sprite_parado_direita;
     ALLEGRO_BITMAP *sprite_coracao_cheio;
     ALLEGRO_BITMAP *sprite_coracao_vazio;

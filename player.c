@@ -2,6 +2,23 @@
 #include <stdio.h>
 #include "player.h"
 
+void atualizar_blocos(Bloco *blocos) {
+    for (int i = 0; i < NUM_BLOCOS; i++) {
+
+        if (blocos[i].existe && blocos[i].desmorona && blocos[i].pisado) {
+            
+            blocos[i].timer_queda++;
+
+            if (blocos[i].timer_queda > 30) {
+                blocos[i].y += 5.0f; 
+                if (blocos[i].y > ALTURA_CHAO + 400) {
+                    blocos[i].existe = 0;
+                }
+            }
+        }
+    }
+}
+
 player *player_create(float x, float y) {
     player *p = malloc(sizeof(player));
     p->x              = x;
@@ -9,23 +26,22 @@ player *player_create(float x, float y) {
     p->vel_y          = 0.0f;
     p->esta_no_chao   = 1;
     p->control        = joystick_create();
-    p->sprite_esquerda = al_load_bitmap("raposaParadaEsquerda.png");
-    p->sprite_agachado = al_load_bitmap("raposaAgachada.png");
+    p->sprite_agachado = al_load_bitmap("sprites/raposaAgachada.png");
     p->agachado = 0;
 
     p->frame = 0;
-    p->sprite_parado_direita = al_load_bitmap("raposaParadaDireita.png");
-    p->sprite_correndo_direita[0] = al_load_bitmap("raposaCorrendo1.png");
-    p->sprite_correndo_direita[1] = al_load_bitmap("raposaCorrendo2.png");
-    p->sprite_correndo_direita[2] = al_load_bitmap("raposaCorrendo3.png");
-    p->sprite_correndo_direita[3] = al_load_bitmap("raposaCorrendo4.png");
-    p->sprite_correndo_direita[4] = al_load_bitmap("raposaCorrendo5.png");
-    p->sprite_correndo_direita[5] = al_load_bitmap("raposaCorrendo6.png");
-    p->sprite_pulando_direita[0] = al_load_bitmap("raposaPulandoDireita1.png");
-    p->sprite_pulando_direita[1] = al_load_bitmap("raposaPulandoDireita2.png");
-    p->sprite_pulando_direita[2] = al_load_bitmap("raposaPulandoDireita3.png");
-    p->sprite_coracao_cheio = al_load_bitmap("coracaoCheio.png");
-    p->sprite_coracao_vazio = al_load_bitmap("coracaoVazio.png");
+    p->sprite_parado_direita = al_load_bitmap("sprites/raposaParadaDireita.png");
+    p->sprite_correndo[0] = al_load_bitmap("sprites/raposaCorrendo1.png");
+    p->sprite_correndo[1] = al_load_bitmap("sprites/raposaCorrendo2.png");
+    p->sprite_correndo[2] = al_load_bitmap("sprites/raposaCorrendo3.png");
+    p->sprite_correndo[3] = al_load_bitmap("sprites/raposaCorrendo4.png");
+    p->sprite_correndo[4] = al_load_bitmap("sprites/raposaCorrendo5.png");
+    p->sprite_correndo[5] = al_load_bitmap("sprites/raposaCorrendo6.png");
+    p->sprite_pulando[0] = al_load_bitmap("sprites/raposaPulandoDireita1.png");
+    p->sprite_pulando[1] = al_load_bitmap("sprites/raposaPulandoDireita2.png");
+    p->sprite_pulando[2] = al_load_bitmap("sprites/raposaPulandoDireita3.png");
+    p->sprite_coracao_cheio = al_load_bitmap("sprites/coracaoCheio.png");
+    p->sprite_coracao_vazio = al_load_bitmap("sprites/coracaoVazio.png");
     p->sprite = p->sprite_parado_direita;
     p->contador = 0;
     p->vidas = 3;
@@ -36,8 +52,8 @@ player *player_create(float x, float y) {
 
 int checar_colisao_chao(player *p, Bloco *blocos, int n) {
     float pe_x1 = p->x;
-    float pe_x2 = p->x + PLAYER_W;
-    float pe_y  = p->y + PLAYER_HEIGHT;
+    float pe_x2 = p->x + PLAYER_LARGURA;
+    float pe_y  = p->y + PLAYER_ALTURA;
     int bx1;
     int bx2;
     int by;
@@ -45,18 +61,22 @@ int checar_colisao_chao(player *p, Bloco *blocos, int n) {
     int caindo_sobre;
 
     for (int i = 0; i < n; i++) {
-        if (!blocos[i].existe) continue;
+        if(blocos[i].existe){
 
-        bx1 = blocos[i].x;
-        bx2 = blocos[i].x + BLOCK_W;
-        by  = blocos[i].y;
+            bx1 = blocos[i].x;
+            bx2 = blocos[i].x + BLOCO_LARGURA;
+            by  = blocos[i].y;
 
-        sobreposicao_x = pe_x2 > bx1 && pe_x1 < bx2;
-        caindo_sobre   = pe_y >= by && pe_y <= by + p->vel_y + 4;
+            sobreposicao_x = pe_x2 > bx1 && pe_x1 < bx2;
+            caindo_sobre   = pe_y >= by && pe_y <= by + p->vel_y + 4;
 
-        if (sobreposicao_x && caindo_sobre) {
-            p->y = by - PLAYER_HEIGHT;
-            return 1;
+            if (sobreposicao_x && caindo_sobre) {
+                p->y = by - PLAYER_ALTURA;
+                if (blocos[i].desmorona && !blocos[i].pisado) {
+                    blocos[i].pisado = 1;
+                }
+                return 1;
+            }
         }
     }
     return 0;
@@ -77,24 +97,24 @@ void checar_queda(player *p){
 void player_move(player *p, Bloco *blocos, int n_blocos) {
 
     if (p->control->left)
-        p->x -= PLAYER_SPEED;
+        p->x -= VELOCIDADE_JOGADOR;
     if (p->control->right)
-        p->x += PLAYER_SPEED;
+        p->x += VELOCIDADE_JOGADOR;
 
     if (p->control->up && p->esta_no_chao) {
-        p->vel_y        = JUMP_FORCE;
+        p->vel_y  = FORCA_PULO;
         p->esta_no_chao = 0;
-        p->frame        = 0;
-        p->contador     = 0;
+        p->frame = 0;
+        p->contador = 0;
     }
 
-    p->vel_y += GRAVITY;
+    p->vel_y += GRAVIDADE;
     p->y     += p->vel_y;
 
     if (p->vel_y >= 0 && checar_colisao_chao(p, blocos, n_blocos)) {
         p->vel_y = 0.0f;
         if (!p->esta_no_chao) {
-            p->frame    = 0;
+            p->frame = 0;
             p->contador = 0;
         }
         p->esta_no_chao = 1;
@@ -115,7 +135,7 @@ if (!p->esta_no_chao) {
         if (p->control->left) p->virado_esquerda = 1;
         if (p->control->right) p->virado_esquerda = 0;
         
-        p->sprite = p->sprite_pulando_direita[p->frame];
+        p->sprite = p->sprite_pulando[p->frame];
 
     } else {
         if (p->control->down) {
@@ -125,7 +145,11 @@ if (!p->esta_no_chao) {
         } else if (p->control->left || p->control->right) {
             p->agachado = 0;
             
-            p->virado_esquerda = p->control->left ? 1 : 0; 
+            if(p->control->left){
+                p->virado_esquerda = 1;
+            } else{
+                p->virado_esquerda = 0;
+            }
 
             p->contador++;
             if (p->contador >= 6) {
@@ -135,13 +159,13 @@ if (!p->esta_no_chao) {
                     p->frame = 0;
                 }
             }
-            p->sprite = p->sprite_correndo_direita[p->frame];
+            p->sprite = p->sprite_correndo[p->frame];
 
         } else {
-            p->frame    = 0;
+            p->frame = 0;
             p->contador = 0;
             p->agachado = 0;
-            p->sprite   = p->sprite_parado_direita;
+            p->sprite = p->sprite_parado_direita;
         }
     }
     checar_queda(p);
@@ -149,11 +173,16 @@ if (!p->esta_no_chao) {
 
 void player_destroy(player *p) {
     joystick_destroy(p->control);
-    al_destroy_bitmap(p->sprite_esquerda);
     al_destroy_bitmap(p->sprite_agachado);
+    al_destroy_bitmap(p->sprite_coracao_cheio);
+    al_destroy_bitmap(p->sprite_coracao_vazio);
 
-    for(int i = 0; i < 5; i++){
-        al_destroy_bitmap(p->sprite_correndo_direita[i]);
+    for(int i = 0; i < 6; i++){
+        al_destroy_bitmap(p->sprite_correndo[i]);
+    }
+
+    for(int i = 0; i < 3; i++){
+        al_destroy_bitmap(p->sprite_pulando[i]);
     }
     free(p);
 }

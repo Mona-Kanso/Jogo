@@ -24,9 +24,11 @@ int main() {
 
     ALLEGRO_TIMER      *timer = al_create_timer(1.0 / FPS);
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-    ALLEGRO_DISPLAY    *disp  = al_create_display(SCREEN_W, SCREEN_H);
+    ALLEGRO_DISPLAY    *disp  = al_create_display(TELA_LARGURA, TELA_ALTURA);
     ALLEGRO_FONT *fonte_titulo = al_load_ttf_font("fonte.ttf", 72, 0);
-    ALLEGRO_BITMAP *sprite_armadilha = al_load_bitmap("armadilha.png");
+    ALLEGRO_BITMAP *sprite_armadilha = al_load_bitmap("sprites/armadilha.png");
+    ALLEGRO_BITMAP *sprite_cogumelo = al_load_bitmap("sprites/cogumelo.png");
+    ALLEGRO_BITMAP *sprite_background = al_load_bitmap("background.jpg");
     ALLEGRO_TRANSFORM   camera;
 
     if (!disp) return -1;
@@ -39,12 +41,15 @@ int main() {
 
     ALLEGRO_COLOR cor_ceu  = al_map_rgb(100, 149, 237);
     ALLEGRO_COLOR cor_chao = al_map_rgb(139,  69,  19);
+    ALLEGRO_COLOR cor_chao_desmorona = al_map_rgb(166, 124, 66);
 
     Bloco blocos[NUM_BLOCOS];
     Armadilhas armadilhas[NUM_BLOCOS];
     Arvores arvores[NUM_BLOCOS];
-    Passaros passaros [NUM_BLOCOS];
-    gerar_elementos(blocos, armadilhas, arvores, passaros);
+    Passaros passaros[NUM_BLOCOS];
+    Cogumelos cogumelos[NUM_BLOCOS];
+    
+    gerar_elementos(blocos, armadilhas, arvores, passaros, cogumelos);
 
     player *p = player_create(COORDENADA_INICIAL_X, COORDENADA_INICIAL_Y);
 
@@ -60,6 +65,9 @@ int main() {
     int main_menu = 1;
     int clicou;
     int game_over = 0;
+    int limite_imagem = 0;
+    float background_w = al_get_bitmap_width(sprite_background);
+    float background_h = al_get_bitmap_height(sprite_background);
 
     while (running) {
         al_wait_for_event(queue, &ev);
@@ -89,26 +97,47 @@ int main() {
                 colisao_armadilha(armadilhas, p);
                 colisao_passaro(passaros, p);
                 
+                
+                limite_imagem = ((int)(p->x * 0.5f)) % (int)background_w;
+
+                al_draw_scaled_bitmap(sprite_background, 0, 0, background_w, background_h, 
+                                      -limite_imagem, 0, background_w, TELA_ALTURA, 0);
+                                      
+                al_draw_scaled_bitmap(sprite_background, 0, 0, background_w, background_h, 
+                                      -limite_imagem + background_w, 0, background_w, TELA_ALTURA, 0);
+
+  
+
                 atualizar_camera(p, &camera);
                 
                 for (int i = 0; i < NUM_BLOCOS; i++) {
+
                     if (blocos[i].existe) {
-                        al_draw_filled_rectangle(
+                        if(blocos[i].desmorona){
+                            al_draw_filled_rectangle(
                             blocos[i].x, blocos[i].y,
-                            blocos[i].x + BLOCK_W, blocos[i].y + BLOCK_H,
+                            blocos[i].x + BLOCO_LARGURA, blocos[i].y + BLOCO_ALTURA,
+                            cor_chao_desmorona);
+
+                        }else {
+                            al_draw_filled_rectangle(
+                            blocos[i].x, blocos[i].y,
+                            blocos[i].x + BLOCO_LARGURA, blocos[i].y + BLOCO_ALTURA,
                             cor_chao);
+
+                        }
                         
                         if (armadilhas[i].existe) {
                             al_draw_scaled_bitmap(sprite_armadilha, 
                                 0, 0, 
                                 al_get_bitmap_width(sprite_armadilha), 
                                 al_get_bitmap_height(sprite_armadilha), 
-                                armadilhas[i].x, armadilhas[i].y, ARMADILHA_W, ARMADILHA_HEIGHT, 0);
+                                armadilhas[i].x, armadilhas[i].y, ARMADILHA_LARGURA, ARMADILHA_ALTURA, 0);
                         }
                         
                         if (arvores[i].existe && arvores[i].sprite != NULL) {
                             float alt_orig_em_pe = al_get_bitmap_height(arvores[i].sprite_01);
-                            float fator_escala = (PLAYER_HEIGHT * 1.8f) / alt_orig_em_pe;
+                            float fator_escala = (PLAYER_ALTURA * 1.8f) / alt_orig_em_pe;
 
                             float larg_final = al_get_bitmap_width(arvores[i].sprite) * fator_escala;
                             float alt_final = al_get_bitmap_height(arvores[i].sprite) * fator_escala;
@@ -120,7 +149,15 @@ int main() {
                                 arvores[i].x, y_rente_ao_chao, larg_final, alt_final, 
                                 0
                             );
-                        }                                
+                        }
+                        
+                        if(cogumelos[i].existe){
+                            al_draw_scaled_bitmap(sprite_cogumelo, 
+                                0, 0, 
+                                al_get_bitmap_width(sprite_cogumelo), 
+                                al_get_bitmap_height(sprite_cogumelo), 
+                                cogumelos[i].x, cogumelos[i].y, COGUMELO_LARGURA, COGUMELO_ALTURA, 0);
+                        }
                     }
 
                     if(passaros[i].existe){
@@ -128,7 +165,7 @@ int main() {
                                 0, 0, 
                                 al_get_bitmap_width(passaros[i].sprite), 
                                 al_get_bitmap_height(passaros[i].sprite), 
-                                passaros[i].x, passaros[i].y, PASSARO_W, PASSARO_HEIGHT, 0);
+                                passaros[i].x, passaros[i].y, PASSARO_LARGURA, PASSARO_ALTURA, 0);
                     }
                 }
 
@@ -141,15 +178,15 @@ int main() {
                     0, 0,
                     al_get_bitmap_width(p->sprite),
                     al_get_bitmap_height(p->sprite),
-                    p->x, p->y + PLAYER_HEIGHT - PLAYER_HEIGHT_AGACHADO,
-                    PLAYER_W , PLAYER_HEIGHT_AGACHADO, 
+                    p->x, p->y + PLAYER_ALTURA - PLAYER_ALTURA_AGACHADO,
+                    PLAYER_LARGURA , PLAYER_ALTURA_AGACHADO, 
                     flag_espelhamento);
                 } else{
                     al_draw_scaled_bitmap(p->sprite,
                     0, 0,
                     al_get_bitmap_width(p->sprite),
                     al_get_bitmap_height(p->sprite),
-                    p->x, p->y, PLAYER_W , PLAYER_HEIGHT, 
+                    p->x, p->y, PLAYER_LARGURA , PLAYER_ALTURA, 
                     flag_espelhamento);
                 }
                 ALLEGRO_TRANSFORM hud;
@@ -167,7 +204,8 @@ int main() {
 
             }
 
-
+            atualizar_blocos(blocos);
+            colisao_cogumelo(cogumelos, p);
             al_flip_display();
             break;
 
@@ -205,5 +243,6 @@ int main() {
     al_destroy_event_queue(queue);
     al_destroy_timer(timer);
     al_destroy_font(fonte_titulo);
-    return 0;
+    al_destroy_bitmap(sprite_background);
+    destroi_obstaculos(arvores, passaros, sprite_cogumelo, sprite_armadilha);
 }

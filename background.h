@@ -20,6 +20,12 @@ typedef struct{
     int x;
     int y;
     int existe;
+} Cogumelos;
+
+typedef struct{
+    int x;
+    int y;
+    int existe;
     int ja_machucou;
 } Armadilhas;
 
@@ -53,20 +59,34 @@ typedef struct {
 
 bloco_de_opcao *inicializa_bloco_de_opcao();
 
+//Cria a tela de menu
 void display_menu_inicial(ALLEGRO_COLOR cor_bloco_opcao, int *main_menu, ALLEGRO_FONT *fonte, int *running, float mouse_x, float mouse_y, int mouse_button);
 
-void gerar_elementos(Bloco *b, Armadilhas *c, Arvores *a, Passaros *p);
+//Gera os obstáculos do jogo
+void gerar_elementos(Bloco *b, Armadilhas *c, Arvores *a, Passaros *p, Cogumelos *m);
 
+//Responsável pelo dimensionamento do sprite e o cálculo de colisão 
 void atualizar_e_colidir_arvores(Arvores *a, player *p);
 
+//Atualiza a câmera para acompanhar o personagem principal 
 void atualizar_camera(player *p, ALLEGRO_TRANSFORM *cam);
 
+//Gera a tela de game over, informando se o jogador ganhou ou perdeu o jogo
 void display_game_over(ALLEGRO_FONT *fonte, int ganhou);
 
+//Cálculo de colisão da armadilha de urso
 void colisao_armadilha(Armadilhas *c, player *p);
 
+//Atualiza a coordenada x do pássaro e atualiza o sprite
 void atualizar_voo_passaros(Passaros *passaros);
 
+//Cálculo de colisão do pássaro
 void colisao_passaro(Passaros *passaros, player *p);
+
+//Cálculo de colisão do cogumelo
+void colisao_cogumelo(Cogumelos *cogumelos, player *p);
+
+//Destrói as sprites
+void destroi_obstaculos(Arvores *a, Passaros *p, ALLEGRO_BITMAP *sprite_cogumelo, ALLEGRO_BITMAP *sprite_armadilha);
 
 #endif
