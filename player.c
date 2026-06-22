@@ -51,9 +51,9 @@ player *player_create(float x, float y) {
 
 
 int checar_colisao_chao(player *p, Bloco *blocos, int n) {
-    float pe_x1 = p->x;
-    float pe_x2 = p->x + PLAYER_LARGURA;
-    float pe_y  = p->y + PLAYER_ALTURA;
+    float px1 = p->x;
+    float px2 = p->x + PLAYER_LARGURA;
+    float py  = p->y + PLAYER_ALTURA;
     int bx1;
     int bx2;
     int by;
@@ -67,8 +67,8 @@ int checar_colisao_chao(player *p, Bloco *blocos, int n) {
             bx2 = blocos[i].x + BLOCO_LARGURA;
             by  = blocos[i].y;
 
-            sobreposicao_x = pe_x2 > bx1 && pe_x1 < bx2;
-            caindo_sobre   = pe_y >= by && pe_y <= by + p->vel_y + 4;
+            sobreposicao_x = px2 > bx1 && px1 < bx2;
+            caindo_sobre   = py >= by && py <= by + p->vel_y + 4;
 
             if (sobreposicao_x && caindo_sobre) {
                 p->y = by - PLAYER_ALTURA;

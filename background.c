@@ -273,30 +273,32 @@ void colisao_armadilha(Armadilhas *c, player *p){
 
 void atualizar_voo_passaros(Passaros *passaros) {
     for (int i = 0; i < NUM_BLOCOS; i++) {
-        if (!passaros[i].existe) continue;
 
-        passaros[i].x -= 5.0f;
+        if(passaros[i].existe){
 
-        passaros[i].contador_tempo++;
-        if (passaros[i].contador_tempo >= 8) {
-            passaros[i].contador_tempo = 0;
-            passaros[i].estado_voo++;
-            
-            if (passaros[i].estado_voo > 4) {
-                passaros[i].estado_voo = 1;
-            }
+            passaros[i].x -= 5.0f;
+            passaros[i].contador_tempo++;
 
-            if (passaros[i].estado_voo == 1){
-                passaros[i].sprite = passaros[i].sprite_01;
-            }
-            else if (passaros[i].estado_voo == 2){
-                passaros[i].sprite = passaros[i].sprite_02;
-            }
-            else if (passaros[i].estado_voo == 3){
-                passaros[i].sprite = passaros[i].sprite_03;
-            }
-            else{ 
-                passaros[i].sprite = passaros[i].sprite_04;
+            if (passaros[i].contador_tempo >= 8) {
+                passaros[i].contador_tempo = 0;
+                passaros[i].estado_voo++;
+                
+                if (passaros[i].estado_voo > 4) {
+                    passaros[i].estado_voo = 1;
+                }
+
+                if (passaros[i].estado_voo == 1){
+                    passaros[i].sprite = passaros[i].sprite_01;
+                }
+                else if (passaros[i].estado_voo == 2){
+                    passaros[i].sprite = passaros[i].sprite_02;
+                }
+                else if (passaros[i].estado_voo == 3){
+                    passaros[i].sprite = passaros[i].sprite_03;
+                }
+                else{ 
+                    passaros[i].sprite = passaros[i].sprite_04;
+                }
             }
         }
     }
